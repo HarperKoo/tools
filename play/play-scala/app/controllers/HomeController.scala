@@ -5,11 +5,12 @@ import javax.inject._
 import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.WSClient
 import play.api.mvc._
+import play.api.db._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.stream.Materializer
-import com.redis.{RedisClient,RedisClientPool}
+import com.redis.{RedisClient, RedisClientPool}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -19,7 +20,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
  */
 @Singleton
-class HomeController @Inject() (ws: WSClient,configuration: play.api.Configuration)
+class HomeController @Inject() (ws: WSClient,configuration: play.api.Configuration,db: Database)
                                (implicit val materializer: Materializer)extends Controller {
 
   /**
@@ -70,6 +71,25 @@ class HomeController @Inject() (ws: WSClient,configuration: play.api.Configurati
         client.get(pair).get.toString
       }
     }
+  }
+
+  /**This is a example of getting data from remote mysql*/
+
+  def getmysql = Action {
+    var outString = "Output is : "
+    val conn = db.getConnection()
+
+    try {
+      val stmt = conn.createStatement
+      val rs = stmt.executeQuery("SELECT DATE,TYPE,CODE,ENGLISH_NAME,CAR_TYPE,SIZE FROM Delivery.truck where date = '2017-01-15'; ")
+
+      while (rs.next()) {
+        outString += rs.getString("ENGLISH_NAME")
+      }
+    } finally {
+      conn.close()
+    }
+    Ok(outString)
   }
 
 }
